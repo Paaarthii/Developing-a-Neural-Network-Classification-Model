@@ -11,73 +11,149 @@ In their existing market, the sales team has classified all customers into 4 seg
 You are required to help the manager to predict the right group of the new customers.
 
 ## Neural Network Model
-Include the neural network model diagram.
+<img width="977" height="858" alt="image" src="https://github.com/user-attachments/assets/61c686c7-0867-4176-aee5-50172758eb16" />
 
 ## DESIGN STEPS
-### STEP 1: 
+STEP 1:
+Load the dataset, remove irrelevant columns (ID), handle missing values, encode categorical features using Label Encoding, and encode the target class (Segmentation).
 
-Write your own steps
+STEP 2:
+Split the dataset into training and testing sets, then normalize the input features using StandardScaler for better neural network performance.
 
-### STEP 2: 
+STEP 3:
+Convert the scaled training and testing data into PyTorch tensors and create DataLoader objects for batch-wise training and evaluation.
 
+STEP 4:
+Design a feedforward neural network with multiple fully connected layers and ReLU activation functions, ending with an output layer for multi-class classification.
 
+STEP 5:
+Train the model using CrossEntropyLoss and Adam optimizer by performing forward propagation, loss calculation, backpropagation, and weight updates over multiple epochs.
 
-### STEP 3: 
-
-
-
-### STEP 4: 
-
-
-
-### STEP 5: 
-
-
-
-### STEP 6: 
-
-
-
-
-
+STEP 6:
+Evaluate the trained model on test data using accuracy, confusion matrix, and classification report, and perform prediction on a sample input.
 ## PROGRAM
 
-### Name:
+### Name: Parthipan M
 
-### Register Number:
+### Register Number: 212225040294
 
 ```python
-class PeopleClassifier(nn.Module):
-    def __init__(self, input_size):
-        super(PeopleClassifier, self).__init__()
-        #Include your code here
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+from sklearn.preprocessing import LabelEncoder,StandardScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score,confusion_matrix,classification_report
+from torch.utils.data import TensorDataset,DataLoader
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.read_csv("customers.csv")
+df
+df=df.drop(columns=["ID"])
+df
+df.columns
+df.fillna({"Work_Experience":0,"Family_Size":df["Family_Size"].median()},inplace=True)
+df
+cat_columns=['Gender','Ever_Married', 'Graduated', 'Profession',
+    'Spending_Score', 'Var_1']
+for col in cat_columns:
+    df[col]=LabelEncoder().fit_transform(df[col])
+lbe=LabelEncoder()
+df["Segmentation"]=lbe.fit_transform(df["Segmentation"])
+df
+x=df.drop(columns="Segmentation")
+y=df["Segmentation"].values
+xt,xst,yt,yst=train_test_split(x,y,test_size=0.2,random_state=42)
+scaler=StandardScaler()
+xt=scaler.fit_transform(xt)
+xst=scaler.transform(xst)
+
+xt=torch.FloatTensor(xt)
+xst=torch.FloatTensor(xst)
+yt=torch.FloatTensor(yt)
+yst=torch.FloatTensor(yst)
+
+tr=TensorDataset(xt,yt)
+tst=TensorDataset(xst,yst)
+trl=DataLoader(tr,batch_size=16,shuffle=True)
+tstl=DataLoader(tst,batch_size=16)
+
+class classifier1(nn.Module):
+    def __init__(self,input_size):
+        super().__init__()
+        self.l1=nn.Linear(input_size,32)
+        self.l2=nn.Linear(32,16)
+        self.l3=nn.Linear(16,8)
+        self.l4=nn.Linear(8,4)
+    def forward(self,x):
+        x=F.relu(self.l1(x))
+        x=F.relu(self.l2(x))
+        x=F.relu(self.l3(x))
+        x=self.l4(x)
+        return x
 
 
+model=classifier1(input_size=xt.shape[1])
+criterion=nn.CrossEntropyLoss()
+op=optim.Adam(model.parameters(),lr=0.001)
 
-    def forward(self, x):
-        #Include your code here
-        
-# Initialize the Model, Loss Function, and Optimizer
+epochs=100
+for i in range(epochs):
+    for a,b in trl:
+        op.zero_grad()
+        pred=model(a)
+        loss=criterion(pred,b.long())
+        loss.backward()
+        op.step()
+    if i%10==0:
+        print(f"Loss:{i}/{epochs}",loss.item())
 
-def train_model(model, train_loader, criterion, optimizer, epochs):
-    #Include your code here
 
+pre=[]
+act=[]
+with torch.no_grad():
+    output=model(xst)
+    _,predicted=torch.max(output,1)
+    pre.extend(predicted.numpy())
+    act.extend(yst.numpy())
+accuracy=accuracy_score(act,pre)
+conf_matrix=confusion_matrix(act,pre)
+cl_report=classification_report(act,pre,target_names=['A','B','C','D'])
+print("Accuracy:",accuracy)
+print("confusion_matrix:\n",conf_matrix)
+print("classification_report:\n",cl_report)
+import seaborn as sns
+import matplotlib.pyplot as plt
+xl=['A','B','C','D']
+sns.heatmap(conf_matrix, annot=True, cmap='Blues', xticklabels=xl, yticklabels=xl,fmt='g')
+plt.xlabel("Predicted Labels")
+plt.ylabel("True Labels")
+plt.title("Confusion Matrix")
+plt.show()
 ```
 
 ### Dataset Information
-Include screenshot of the dataset.
+<img width="965" height="371" alt="Screenshot 2026-11-02 103341" src="https://github.com/user-attachments/assets/2e0e5cf0-cd25-427c-92ea-ef828404e348" />
+
 
 ### OUTPUT
 
+<img width="887" height="370" alt="Screenshot 2026-11-02 103810" src="https://github.com/user-attachments/assets/2b32a5bf-03a2-45e0-8908-3be1ec24ed16" />
+
 ## Confusion Matrix
 
-Include confusion matrix here
+<img width="512" height="435" alt="Screenshot 2026-11-02 103128" src="https://github.com/user-attachments/assets/d27f84cb-144e-4089-9bdd-43583c5cdaf6" />
 
 ## Classification Report
-Include classification report here
+
+<img width="393" height="177" alt="Screenshot 2026-11-02 103108" src="https://github.com/user-attachments/assets/88617e1c-dece-4e0e-8a08-1c1d0dc3ecd2" />
 
 ### New Sample Data Prediction
-Include your sample input and output here
+
+<img width="205" height="97" alt="Screenshot 2026-11-02 103532" src="https://github.com/user-attachments/assets/1e51f1c8-c6da-4261-b51d-f218b02b51f6" />
 
 ## RESULT
-Include your result here
+This program has been executed successfully.
